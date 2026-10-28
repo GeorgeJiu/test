@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Show what the receiver has stored: chunk count, total size, and the latest uploads."""
+"""Show what the receiver has stored: chunks, total size, the latest uploads, and bookmarks."""
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import sqlite3
 
@@ -17,6 +17,10 @@ db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
 db.row_factory = sqlite3.Row
 try:
     rows = db.execute("SELECT * FROM chunks ORDER BY received DESC").fetchall()
+    try:
+        markers = db.execute("SELECT * FROM markers ORDER BY at DESC").fetchall()
+    except sqlite3.OperationalError:
+        markers = []  # The table appears when an updated receiver starts.
 finally:
     db.close()
 files = [Path(r["path"]) for r in rows]
@@ -32,3 +36,23 @@ for r in rows[:args.last]:
     recorded = datetime.fromisoformat(r["started"].replace("Z", "+00:00")).astimezone().strftime("%Y-%m-%d %H:%M:%S")
     state = "ok" if Path(r["path"]).exists() else "MISSING"
     print(f"  recorded {recorded}  received {received}  {r['duration']:5.1f}s  {state}  {Path(r['path']).name}")
+
+
+def utc(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def local(value: str) -> str:
+    return utc(value).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+
+
+print(f"\nMarkers: {len(markers)}")
+for m in markers[:args.last]:
+    at = utc(m["at"])
+    # A marker belongs to the chunk whose recording covers its moment.
+    covering = next((r for r in rows
+                     if utc(r["started"]) <= at < utc(r["started"]) + timedelta(seconds=r["duration"])), None)
+    where = (f"{Path(covering['path']).name} at {(at - utc(covering['started'])).total_seconds():.1f}s"
+             if covering else "no uploaded audio covers this moment")
+    note = f"  \"{m['note']}\"" if m["note"] else ""
+    print(f"  {local(m['at'])}  {where}{note}")

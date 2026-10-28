@@ -126,6 +126,40 @@ class ReceiverTests(unittest.TestCase):
         self.assertIn(b"400", response)
         self.assertIsNone(self.inbox.receipt(chunk_id))
 
+    def mark(self, payload, marker_id=None, token=None):
+        marker_id = marker_id or str(uuid.uuid4())
+        body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+        headers = {"Authorization": "Bearer " + (token or self.inbox.token), "X-Device-ID": self.device,
+                   "Content-Type": "application/json"}
+        client = http.client.HTTPConnection(*self.server.server_address, timeout=5)
+        client.request("POST", "/v1/markers/" + marker_id, body, headers)
+        response = client.getresponse()
+        result = response.status, json.loads(response.read()), marker_id
+        client.close()
+        return result
+
+    def test_marker_is_stored_once_and_retry_is_idempotent(self):
+        status, receipt, marker_id = self.mark({"at": "2026-10-28T21:56:07.123+08:00", "note": "重点"})
+        self.assertEqual((status, receipt), (201, {"id": marker_id, "durable": True}))
+        status, _, _ = self.mark({"at": "2026-10-28T13:56:07.123Z", "note": "重点"}, marker_id=marker_id)
+        self.assertEqual(status, 200, "Same moment in another time zone is the same marker")
+        with self.inbox.connect() as db:
+            rows = db.execute("SELECT at,note FROM markers").fetchall()
+        self.assertEqual([tuple(r) for r in rows], [("2026-10-28T13:56:07.123Z", "重点")])
+
+    def test_conflicting_marker_rejected(self):
+        _, _, marker_id = self.mark({"at": "2026-10-28T13:56:07Z"})
+        status, _, _ = self.mark({"at": "2026-10-28T13:57:00Z"}, marker_id=marker_id)
+        self.assertEqual(status, 409)
+
+    def test_bad_markers_rejected(self):
+        for payload in ({"at": "2026-10-28T13:56:07"}, {"at": "yesterday"}, {}, [], b"not json",
+                        {"at": "2026-10-28T13:56:07Z", "note": "x" * 501}, {"at": "2026-10-28T13:56:07Z", "note": 5}):
+            self.assertEqual(self.mark(payload)[0], 400, payload)
+        self.assertEqual(self.mark({"at": "2026-10-28T13:56:07Z"}, token="wrong")[0], 401)
+        self.assertEqual(self.mark({"at": "2026-10-28T13:56:07Z"}, marker_id="../etc")[0], 400)
+        self.assertEqual(self.inbox.marker_count(), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

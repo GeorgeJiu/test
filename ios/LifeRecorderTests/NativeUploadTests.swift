@@ -15,7 +15,10 @@ final class NativeUploadTests: XCTestCase {
         let priorURL = UserDefaults.standard.string(forKey: "receiverURL")
         let priorPin = UserDefaults.standard.string(forKey: "certificateSHA256")
         let priorToken = Credentials.token()
+        let priorKeep = QueueStore.keepsUploadedCopies
+        QueueStore.keepsUploadedCopies = false // This test checks deletion after a durable receipt.
         defer {
+            QueueStore.keepsUploadedCopies = priorKeep
             UserDefaults.standard.set(priorURL, forKey: "receiverURL")
             UserDefaults.standard.set(priorPin, forKey: "certificateSHA256")
             try? Credentials.setToken(priorToken)

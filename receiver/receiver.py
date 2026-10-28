@@ -23,6 +23,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 MAX_UPLOAD = 32 * 1024 * 1024
+MAX_MARKER = 4096
+MAX_NOTE = 500
 
 
 def atomic_write(path: Path, data: bytes):
@@ -41,6 +43,14 @@ def sync_dir(path: Path):
         os.fsync(fd)
     finally:
         os.close(fd)
+
+
+def utc_timestamp(value: str) -> str:
+    """Normalize an ISO 8601 time with a timezone to UTC with millisecond precision."""
+    moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if moment.tzinfo is None:
+        raise ValueError("Capture time must have a timezone")
+    return moment.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def valid_uuid(value: str) -> str:
@@ -72,6 +82,9 @@ class Inbox:
                 status TEXT NOT NULL DEFAULT 'pending', transcript TEXT,
                 attempts INTEGER NOT NULL DEFAULT 0, retry_at REAL NOT NULL DEFAULT 0,
                 error TEXT, received REAL NOT NULL)""")
+            db.execute("""CREATE TABLE IF NOT EXISTS markers (
+                id TEXT PRIMARY KEY, device TEXT NOT NULL, at TEXT NOT NULL,
+                note TEXT NOT NULL DEFAULT '', received REAL NOT NULL)""")
         # Recover a crash after a transcript transaction but before Markdown refresh.
         self.export()
         self.cleanup_completed()
@@ -102,6 +115,18 @@ class Inbox:
                 db.execute("""INSERT INTO chunks
                     (id,sha256,device,started,duration,path,received) VALUES (?,?,?,?,?,?,?)""",
                     (chunk_id, digest, device, started, duration, str(dest), time.time()))
+            return True
+
+    def add_marker(self, marker_id: str, device: str, at: str, note: str) -> bool:
+        """Store a bookmark. Returns False for an identical retry; raises ValueError on a conflicting one."""
+        with self.lock, self.connect() as db:
+            old = db.execute("SELECT device,at,note FROM markers WHERE id=?", (marker_id,)).fetchone()
+            if old:
+                if (old["device"], old["at"], old["note"]) != (device, at, note):
+                    raise ValueError("Marker ID already belongs to a different marker")
+                return False
+            db.execute("INSERT INTO markers (id,device,at,note,received) VALUES (?,?,?,?,?)",
+                       (marker_id, device, at, note, time.time()))
             return True
 
     def complete(self, chunk_id: str, transcript: str):
@@ -151,6 +176,10 @@ class Inbox:
             return {row["status"]: row["n"] for row in db.execute(
                 "SELECT status,count(*) AS n FROM chunks GROUP BY status")}
 
+    def marker_count(self) -> int:
+        with self.connect() as db:
+            return db.execute("SELECT count(*) FROM markers").fetchone()[0]
+
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -186,21 +215,20 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(401, {"error": "Unauthorized"})
         if self.path != "/health":
             return self.respond(404, {"error": "Not found"})
-        self.respond(200, {"ok": True, "chunks": self.inbox.status()})
+        self.respond(200, {"ok": True, "chunks": self.inbox.status(), "markers": self.inbox.marker_count()})
 
     def do_POST(self):
         if not self.authorized():
             return self.respond(401, {"error": "Unauthorized"})
+        if self.path.startswith("/v1/markers/"):
+            return self.post_marker()
         tmp = None
         try:
             if not self.path.startswith("/v1/chunks/"):
                 return self.respond(404, {"error": "Not found"})
             chunk_id = valid_uuid(self.path.removeprefix("/v1/chunks/"))
             device = valid_uuid(self.headers.get("X-Device-ID", ""))
-            started = datetime.fromisoformat(self.headers.get("X-Started-At", "").replace("Z", "+00:00"))
-            if started.tzinfo is None:
-                raise ValueError("Capture time must have a timezone")
-            started = started.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+            started = utc_timestamp(self.headers.get("X-Started-At", ""))
             duration = float(self.headers.get("X-Duration-Seconds", ""))
             if not 0 < duration <= 600:
                 raise ValueError("Invalid duration")
@@ -239,6 +267,28 @@ class Handler(BaseHTTPRequestHandler):
         finally:
             if tmp:
                 tmp.unlink(missing_ok=True)
+
+    def post_marker(self):
+        try:
+            marker_id = valid_uuid(self.path.removeprefix("/v1/markers/"))
+            device = valid_uuid(self.headers.get("X-Device-ID", ""))
+            length = int(self.headers.get("Content-Length", "0"))
+            if not 0 < length <= MAX_MARKER or self.headers.get("Transfer-Encoding"):
+                return self.respond(413, {"error": "Invalid marker size"})
+            body = json.loads(self.rfile.read(length))
+            at = utc_timestamp(body["at"])
+            note = body.get("note", "")
+            if not isinstance(note, str) or len(note) > MAX_NOTE:
+                raise ValueError("Invalid note")
+            try:
+                new = self.inbox.add_marker(marker_id, device, at, note)
+            except ValueError:
+                return self.respond(409, {"error": "Marker ID conflict"})
+            self.respond(201 if new else 200, {"id": marker_id, "durable": True})
+        except (ValueError, KeyError, TypeError, AttributeError, OverflowError, TimeoutError):
+            self.respond(400, {"error": "Invalid marker"})
+        except OSError:
+            self.respond(503, {"error": "Storage temporarily unavailable"})
 
 
 class Receiver(ThreadingHTTPServer):

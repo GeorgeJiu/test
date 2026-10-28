@@ -178,6 +178,8 @@ sudo python3 /opt/life-recorder-src/receiver/inbox_status.py
 
 能看到片段数、总大小和最近几段的录制时间即成功。音频文件在 `/srv/life-recorder/audio/`。
 
+输出最后的 `Markers:` 部分列出 App 里打的重点标记，以及每个标记对应哪段录音的第几秒。
+
 断网测试：录音时打开飞行模式 3 分钟，再关闭。断网期间的片段会留在手机上，联网后自动补传；服务器对重复上传自动去重。
 
 ## 7. 日常运维

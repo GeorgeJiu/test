@@ -13,6 +13,11 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
     @Published private(set) var storedBytes: Int64 = 0
     @Published private(set) var lastUploadedAt: Date?
     @Published private(set) var events: [String] = []
+    @Published private(set) var markers: [Marker] = []
+    @Published private(set) var keepsUploadedCopies = QueueStore.keepsUploadedCopies
+    @Published private(set) var uploadedCopyCount = 0
+    @Published private(set) var uploadedCopyBytes: Int64 = 0
+    private static let markerPrefix = "marker-"
     var backgroundCompletion: (() -> Void)?
     private var responseData: [Int: Data] = [:]
     private var retries: [String: Date] = [:]
@@ -64,6 +69,12 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
         let pending = QueueStore.pending()
         pendingCount = pending.count
         storedBytes = QueueStore.storedAudioBytes()
+        let pruned = QueueStore.pruneUploadedCopies()
+        if pruned > 0 { note("Low free space: removed \(pruned) oldest uploaded copies") }
+        let copies = QueueStore.uploadedCopies()
+        uploadedCopyCount = copies.count
+        uploadedCopyBytes = copies.bytes
+        markers = MarkerStore.all()
         guard let settings = ReceiverSettings.load() else { status = String(localized: "Pair with a receiver to upload"); return }
         guard !authenticationRejected else { return }
         guard !pumping else { return }
@@ -89,6 +100,24 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
                     active.insert(id)
                 }
                 var available = max(0, 2 - active.count)
+                // Markers are tiny; send them ahead of audio.
+                for marker in MarkerStore.pending() where !active.contains(Self.markerPrefix + marker.name) {
+                    guard available > 0 else { break }
+                    let key = Self.markerPrefix + marker.name
+                    if let retry = self.retries[key], retry > Date() { continue }
+                    guard let body = try? MarkerStore.uploadBody(marker, timestamp: Self.timestamp(marker.at)) else { continue }
+                    let url = settings.baseURL.appendingPathComponent("v1/markers").appendingPathComponent(marker.name)
+                    var request = URLRequest(url: url)
+                    request.httpMethod = "POST"
+                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    request.setValue("Bearer " + settings.token, forHTTPHeaderField: "Authorization")
+                    request.setValue(QueueStore.deviceID, forHTTPHeaderField: "X-Device-ID")
+                    let task = self.session.uploadTask(with: request, fromFile: body)
+                    task.taskDescription = Self.taskDescription(for: key)
+                    task.resume()
+                    self.note("Marker upload started: \(marker.name.prefix(8))")
+                    available -= 1
+                }
                 for chunk in pending where !active.contains(chunk.name) {
                     guard available > 0 else { break }
                     if let retry = self.retries[chunk.name], retry > Date() { continue }
@@ -137,6 +166,47 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
         return "HTTP \(response.statusCode) \(body)"
     }
 
+    func setKeepsUploadedCopies(_ value: Bool) {
+        QueueStore.keepsUploadedCopies = value
+        keepsUploadedCopies = value
+        note(value ? "Uploaded copies will be kept" : "Uploaded copies will be deleted")
+    }
+
+    /// Bookmarks this moment and queues it for upload.
+    @discardableResult
+    func addMarker() -> Marker? {
+        do {
+            let marker = try MarkerStore.add()
+            note("Marked \(marker.at.formatted(date: .omitted, time: .standard))")
+            pump()
+            return marker
+        } catch {
+            note("Could not save marker: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func markerFinished(key: String, error: Error?, response: HTTPURLResponse?, data: Data) {
+        let name = String(key.dropFirst(Self.markerPrefix.count))
+        guard let marker = MarkerStore.pending().first(where: { $0.name == name }) else { return }
+        struct Receipt: Decodable { let id: String; let durable: Bool }
+        if error == nil, let response, [200, 201].contains(response.statusCode),
+           let receipt = try? JSONDecoder().decode(Receipt.self, from: data), receipt.durable, receipt.id == name {
+            do {
+                try MarkerStore.markUploaded(marker)
+                retries.removeValue(forKey: key)
+                failureCounts.removeValue(forKey: key)
+                note("Marker uploaded: \(name.prefix(8))")
+            } catch { note("Marker uploaded; saving its state failed: \(error.localizedDescription)") }
+        } else {
+            note("Marker upload failed: \(name.prefix(8)): " + Self.describe(error, response, data))
+            let failures = (failureCounts[key] ?? 0) + 1
+            failureCounts[key] = failures
+            retries[key] = Date().addingTimeInterval(min(1800, 15 * pow(2, Double(min(failures, 7)))))
+            if response?.statusCode == 401 { authenticationRejected = true }
+        }
+    }
+
     private static func timestamp(_ date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -169,6 +239,11 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         let data = responseData.removeValue(forKey: task.taskIdentifier) ?? Data()
+        if let key = Self.taskID(task.taskDescription), key.hasPrefix(Self.markerPrefix) {
+            markerFinished(key: key, error: error, response: task.response as? HTTPURLResponse, data: data)
+            pump()
+            return
+        }
         guard let id = Self.taskID(task.taskDescription),
               let chunk = QueueStore.pending().first(where: { $0.name == id }) else { pump(); return }
         struct Receipt: Decodable { let id: String; let sha256: String; let durable: Bool }
@@ -177,12 +252,14 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
            let receipt = try? JSONDecoder().decode(Receipt.self, from: data),
            receipt.durable, receipt.id == id, receipt.sha256 == chunk.sha256 {
             do {
-                try QueueStore.removeAcknowledged(chunk)
+                let keep = QueueStore.keepsUploadedCopies
+                if keep { try QueueStore.archiveAcknowledged(chunk) } else { try QueueStore.removeAcknowledged(chunk) }
                 retries.removeValue(forKey: id)
                 failureCounts.removeValue(forKey: id)
                 lastUploadedAt = Date()
                 note("Uploaded: \(id.prefix(8)) (HTTP \(response.statusCode))")
-                status = String(localized: "Uploaded safely; local copy removed")
+                status = keep ? String(localized: "Uploaded safely; copy kept on this iPhone")
+                    : String(localized: "Uploaded safely; local copy removed")
             } catch { status = String(localized: "Uploaded; local cleanup will retry on reopening") }
         } else {
             note("Upload failed: \(id.prefix(8)): " + Self.describe(error, response, data))

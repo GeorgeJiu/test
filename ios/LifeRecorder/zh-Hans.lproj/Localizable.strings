@@ -30,7 +30,16 @@
 "Recent upload events" = "最近的上传事件";
 "Where recordings are saved" = "录音保存位置";
 "On this iPhone: Files › On My iPhone › Life Recorder › Recordings" = "本机：“文件” App › 我的 iPhone › Life Recorder › Recordings";
-"%lld clips, %@ on this iPhone" = "本机共 %lld 段，%@";
+"%lld clips not yet uploaded (%@)" = "%lld 段尚未上传（%@）";
+"Keep a copy on this iPhone after upload" = "上传后在本机保留副本";
+"%lld uploaded copies, %@, in Recordings › Uploaded. If free space drops below 1 GB, the oldest uploaded copies are deleted so recording can continue." = "已上传的副本共 %lld 段（%@），在 Recordings › Uploaded 文件夹中。可用空间低于 1 GB 时，会从最旧的已上传副本开始删除，保证录音不中断。";
+"Uploaded safely; copy kept on this iPhone" = "已安全上传，本机保留了副本";
+"Mark this moment" = "标记此刻";
+"Marked at %@" = "已标记：%@";
+"Markers" = "重点标记";
+"Tap “Mark this moment” while recording to bookmark something important." = "录音时点“标记此刻”，给重要内容打上标记。";
+"Uploaded" = "已上传";
+"Waiting to upload" = "等待上传";
 "Uploads to: %@" = "上传到：%@";
 "After the server confirms a clip is saved, the copy on this iPhone is deleted." = "服务器确认保存后，本机上的这段录音会被删除。";
 "No server paired. Recordings stay on this iPhone." = "尚未配对服务器，录音保存在本机。";

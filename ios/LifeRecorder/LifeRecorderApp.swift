@@ -56,6 +56,7 @@ struct ContentView: View {
     @ObservedObject var uploads: UploadManager
     @Binding var showSettings: Bool
     @State private var changing = false
+    @State private var lastMarker: Date?
 
     var body: some View {
         NavigationStack {
@@ -81,6 +82,20 @@ struct ContentView: View {
                         }
                         .buttonStyle(.borderedProminent).tint(recorder.enabled ? .red : .indigo)
                         .disabled(changing).accessibilityIdentifier("recorderToggle")
+                        Button {
+                            if let marker = uploads.addMarker() {
+                                lastMarker = marker.at
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            }
+                        } label: {
+                            Label("Mark this moment", systemImage: "bookmark.fill")
+                                .frame(maxWidth: .infinity).padding(.vertical, 8)
+                        }
+                        .buttonStyle(.bordered).disabled(!recorder.recording)
+                        if let lastMarker {
+                            Text("Marked at \(lastMarker.formatted(date: .omitted, time: .standard))")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
                     }
                     .padding(24).frame(maxWidth: .infinity)
                     .background(.quaternary, in: RoundedRectangle(cornerRadius: 28))
@@ -105,6 +120,7 @@ struct ContentView: View {
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
+                    MarkersSection(uploads: uploads)
                     StorageSection(uploads: uploads)
                     Text("Records with the screen locked. After restarting the phone or force-quitting, open this app once to resume. Switching off stays off.")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -162,6 +178,30 @@ struct InputSection: View {
     }
 }
 
+/// Recent bookmarks and whether each has reached the server.
+struct MarkersSection: View {
+    @ObservedObject var uploads: UploadManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Markers", systemImage: "bookmark").font(.headline)
+            if uploads.markers.isEmpty {
+                Text("Tap “Mark this moment” while recording to bookmark something important.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(uploads.markers.prefix(10)) { marker in
+                HStack {
+                    Text(marker.at.formatted(date: .abbreviated, time: .standard))
+                    Spacer()
+                    Image(systemName: marker.uploaded ? "checkmark.icloud" : "clock").foregroundStyle(.secondary)
+                        .accessibilityLabel(marker.uploaded ? Text("Uploaded") : Text("Waiting to upload"))
+                }
+                .font(.callout)
+            }
+        }
+    }
+}
+
 /// Says where recordings live, so the phone copy can be found and its lifetime is clear.
 struct StorageSection: View {
     @ObservedObject var uploads: UploadManager
@@ -171,14 +211,21 @@ struct StorageSection: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Where recordings are saved", systemImage: "folder").font(.headline)
             Text("On this iPhone: Files › On My iPhone › Life Recorder › Recordings")
-            Text("\(uploads.pendingCount) clips, \(uploads.storedBytes.formatted(.byteCount(style: .file))) on this iPhone")
+            Text("\(uploads.pendingCount) clips not yet uploaded (\(uploads.storedBytes.formatted(.byteCount(style: .file))))")
                 .foregroundStyle(.secondary)
             if let receiver = UserDefaults.standard.string(forKey: "receiverURL") {
                 Text("Uploads to: \(receiver)").foregroundStyle(.secondary).textSelection(.enabled)
-                Text("After the server confirms a clip is saved, the copy on this iPhone is deleted.")
-                    .font(.footnote).foregroundStyle(.secondary)
             } else {
                 Text("No server paired. Recordings stay on this iPhone.").foregroundStyle(.secondary)
+            }
+            Toggle("Keep a copy on this iPhone after upload", isOn: Binding(get: { uploads.keepsUploadedCopies },
+                                                                            set: { uploads.setKeepsUploadedCopies($0) }))
+            if uploads.keepsUploadedCopies {
+                Text("\(uploads.uploadedCopyCount) uploaded copies, \(uploads.uploadedCopyBytes.formatted(.byteCount(style: .file))), in Recordings › Uploaded. If free space drops below 1 GB, the oldest uploaded copies are deleted so recording can continue.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            } else {
+                Text("After the server confirms a clip is saved, the copy on this iPhone is deleted.")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
             Button("Open in Files", systemImage: "arrow.up.forward.app") {
                 // shareddocuments:// opens the Files app at a path inside this app's Documents.
