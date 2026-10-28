@@ -207,6 +207,31 @@ sudo python3 /opt/life-recorder-src/receiver/setup_transcriber.py
 
 安装时会先用模型自带的普通话样例自检，输出一行识别结果。已上传的历史录音会按时间顺序自动补转。
 
+**国内下载模型慢**（卡在 `Downloading sherpa-onnx-sense-voice...`）：按 Ctrl+C 停止，删掉未完成的文件，
+从 hf-mirror.com 只下载需要的 3 个文件（约 240 MB，可断点续传），再重新运行安装脚本，它会跳过下载。
+
+```bash
+sudo rm -f /opt/life-recorder/models/*.part
+```
+
+```bash
+sudo mkdir -p /opt/life-recorder/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/test_wavs
+```
+
+```bash
+sudo curl -L -C - -o /opt/life-recorder/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/model.int8.onnx https://hf-mirror.com/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/model.int8.onnx
+```
+
+```bash
+sudo curl -L -C - -o /opt/life-recorder/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/tokens.txt https://hf-mirror.com/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/tokens.txt
+```
+
+```bash
+sudo curl -L -C - -o /opt/life-recorder/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/test_wavs/zh.wav https://hf-mirror.com/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/test_wavs/zh.wav
+```
+
+`model.int8.onnx` 应约 239 MB、`tokens.txt` 约 316 KB；大小明显不对说明镜像返回了错误页面。
+
 查看进度：
 
 ```bash

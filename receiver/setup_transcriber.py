@@ -60,7 +60,15 @@ def download(url: str, target: Path):
     print(f"Downloading {url.rsplit('/', 1)[-1]} ...", flush=True)
     partial = target.with_name(target.name + ".part")
     with urllib.request.urlopen(url, timeout=60) as response, partial.open("wb") as out:
-        shutil.copyfileobj(response, out, 1 << 20)
+        total = int(response.headers.get("Content-Length") or 0)
+        done, shown = 0, -10
+        while block := response.read(1 << 20):
+            out.write(block)
+            done += len(block)
+            percent = done * 100 // total if total else -1
+            if percent >= shown + 10:
+                shown = percent
+                print(f"  {done / 1e6:.0f} MB" + (f" ({percent}%)" if total else ""), flush=True)
     os.replace(partial, target)
 
 
@@ -73,6 +81,10 @@ wanted = {f"{SENSE_VOICE}/model.int8.onnx", f"{SENSE_VOICE}/tokens.txt", f"{SENS
 if not all((MODELS / name).exists() for name in wanted):
     archive = MODELS / (SENSE_VOICE + ".tar.bz2")
     if not archive.exists():
+        print("The model archive is about 1 GB. If GitHub is slow from your network, stop with Ctrl+C and\n"
+              "download model.int8.onnx, tokens.txt and test_wavs/zh.wav into\n"
+              f"  {model_dir}\n"
+              "(see docs/vps-deploy.md), then re-run this script.", flush=True)
         download(f"{args.model_base_url}/{SENSE_VOICE}.tar.bz2", archive)
     print("Extracting the int8 model...", flush=True)
     with tarfile.open(archive) as tar:
