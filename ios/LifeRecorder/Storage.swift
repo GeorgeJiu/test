@@ -19,17 +19,36 @@ struct RecordingJournal: Codable {
 }
 
 enum QueueStore {
+    /// Documents/Recordings, visible in the Files app under On My iPhone › Life Recorder.
     static let directory: URL = {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let url = support.appendingPathComponent("PendingAudio", isDirectory: true)
-        try! FileManager.default.createDirectory(at: url, withIntermediateDirectories: true,
+        let fileManager = FileManager.default
+        let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = documents.appendingPathComponent("Recordings", isDirectory: true)
+        try! fileManager.createDirectory(at: url, withIntermediateDirectories: true,
             attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication])
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         var excludedURL = url
         try? excludedURL.setResourceValues(values)
+        // Earlier builds queued audio in Application Support, which the Files app cannot show.
+        let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let legacy = support.appendingPathComponent("PendingAudio", isDirectory: true)
+        if let files = try? fileManager.contentsOfDirectory(at: legacy, includingPropertiesForKeys: nil) {
+            for file in files { try? fileManager.moveItem(at: file, to: url.appendingPathComponent(file.lastPathComponent)) }
+            if (try? fileManager.contentsOfDirectory(atPath: legacy.path))?.isEmpty == true {
+                try? fileManager.removeItem(at: legacy)
+            }
+        }
         return url
     }()
+
+    /// Total size of the audio currently kept on this phone.
+    static func storedAudioBytes() -> Int64 {
+        let files = (try? FileManager.default.contentsOfDirectory(at: directory,
+            includingPropertiesForKeys: [.fileSizeKey])) ?? []
+        return files.filter { $0.pathExtension == "m4a" }
+            .reduce(0) { $0 + Int64((try? $1.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) }
+    }
 
     static var deviceID: String {
         if let value = UserDefaults.standard.string(forKey: "deviceID") { return value }
@@ -81,6 +100,8 @@ enum QueueStore {
         // Removal of an acknowledged manifest is the local commit point. Finish cleanup after a crash.
         for audio in files where audio.pathExtension == "m4a" {
             let stem = audio.deletingPathExtension().lastPathComponent
+            // The folder is visible in the Files app; only clean up clips this app named.
+            guard UUID(uuidString: stem) != nil else { continue }
             if !FileManager.default.fileExists(atPath: directory.appendingPathComponent(stem + ".json").path)
                 && !FileManager.default.fileExists(atPath: directory.appendingPathComponent(stem + ".recording.json").path) {
                 try? FileManager.default.removeItem(at: audio)
@@ -143,13 +164,13 @@ struct ReceiverSettings {
               parsed.query == nil, parsed.fragment == nil,
               parsed.path.isEmpty || parsed.path == "/", !token.isEmpty else {
             throw NSError(domain: "Settings", code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Enter an HTTPS receiver address and its pairing token."])
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Enter an HTTPS receiver address and its pairing token.")])
         }
         let cleanPin = pin.lowercased().replacingOccurrences(of: ":", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard cleanPin.isEmpty || (cleanPin.count == 64 && cleanPin.allSatisfy { $0.isHexDigit }) else {
             throw NSError(domain: "Settings", code: 2,
-                userInfo: [NSLocalizedDescriptionKey: "The certificate fingerprint must contain 64 hexadecimal characters."])
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "The certificate fingerprint must contain 64 hexadecimal characters.")])
         }
         try Credentials.setToken(token)
         UserDefaults.standard.set(parsed.absoluteString, forKey: "receiverURL")

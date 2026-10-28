@@ -1,0 +1,4 @@
+/* Simplified Chinese Info.plist strings. */
+
+"NSMicrophoneUsageDescription" = "开启录音后，即使锁屏也会持续录音。";
+"NSLocalNetworkUsageDescription" = "将录音安全地发送到你的接收服务器。";

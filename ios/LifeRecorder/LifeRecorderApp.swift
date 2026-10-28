@@ -63,7 +63,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Keep the context.").font(.system(size: 36, weight: .semibold, design: .rounded))
-                        Text("Your phone records. Your Mac turns it into text.")
+                        Text("Your phone records. Your server keeps the audio.")
                             .font(.title3).foregroundStyle(.secondary)
                     }
                     VStack(spacing: 20) {
@@ -75,7 +75,7 @@ struct ContentView: View {
                             changing = true
                             Task { await recorder.setEnabled(!recorder.enabled); changing = false }
                         } label: {
-                            Label(recorder.enabled ? "Switch recorder off" : "Switch recorder on",
+                            Label(LocalizedStringKey(recorder.enabled ? "Switch recorder off" : "Switch recorder on"),
                                   systemImage: recorder.enabled ? "stop.fill" : "mic.fill")
                                 .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
                         }
@@ -97,12 +97,13 @@ struct ContentView: View {
                                 .foregroundStyle(.orange)
                         }
                     }
+                    StorageSection(uploads: uploads)
                     Text("Records with the screen locked. After restarting the phone or force-quitting, open this app once to resume. Switching off stays off.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }.padding(24)
             }
             .navigationTitle("Life Recorder").navigationBarTitleDisplayMode(.inline)
-            .toolbar { Button("Pair Mac", systemImage: "laptopcomputer") { showSettings = true } }
+            .toolbar { Button("Pair server", systemImage: "server.rack") { showSettings = true } }
             .sheet(isPresented: $showSettings) { PairingView(uploads: uploads) }
         }
     }
@@ -114,7 +115,7 @@ struct InputSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label(recorder.currentInput.map { "Input: " + $0.label } ?? "Input: none",
+            Label(recorder.currentInput.map { String(localized: "Input: \($0.label)") } ?? String(localized: "Input: none"),
                   systemImage: recorder.currentInput?.isExternal == true ? "mic.fill" : "iphone")
                 .font(.headline)
             if recorder.recording && recorder.currentInput?.isExternal != true {
@@ -147,6 +148,32 @@ struct InputSection: View {
     }
 }
 
+/// Says where recordings live, so the phone copy can be found and its lifetime is clear.
+struct StorageSection: View {
+    @ObservedObject var uploads: UploadManager
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Where recordings are saved", systemImage: "folder").font(.headline)
+            Text("On this iPhone: Files › On My iPhone › Life Recorder › Recordings")
+            Text("\(uploads.pendingCount) clips, \(uploads.storedBytes.formatted(.byteCount(style: .file))) on this iPhone")
+                .foregroundStyle(.secondary)
+            if let receiver = UserDefaults.standard.string(forKey: "receiverURL") {
+                Text("Uploads to: \(receiver)").foregroundStyle(.secondary).textSelection(.enabled)
+                Text("After the server confirms a clip is saved, the copy on this iPhone is deleted.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            } else {
+                Text("No server paired. Recordings stay on this iPhone.").foregroundStyle(.secondary)
+            }
+            Button("Open in Files", systemImage: "arrow.up.forward.app") {
+                // shareddocuments:// opens the Files app at a path inside this app's Documents.
+                if let url = URL(string: "shareddocuments://" + QueueStore.directory.path) { openURL(url) }
+            }
+        }
+    }
+}
+
 struct PairingView: View {
     @ObservedObject var uploads: UploadManager
     @Environment(\.dismiss) private var dismiss
@@ -158,8 +185,8 @@ struct PairingView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Your Mac receiver") {
-                    TextField("https://your-mac:8765", text: $address)
+                Section("Your receiver") {
+                    TextField("https://your-server:8765", text: $address)
                         .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                     SecureField("Pairing token", text: $token)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -167,12 +194,12 @@ struct PairingView: View {
                         .font(.caption.monospaced()).textInputAutocapitalization(.never).autocorrectionDisabled()
                 }
                 Section {
-                    Text("Uploads use Wi-Fi or cellular. When your Mac is unreachable, audio stays here until it can be uploaded.")
-                    Text("Use the pairing link generated on your Mac to fill these fields. For cellular access, use a private VPN or another reachable HTTPS address.")
+                    Text("Uploads use Wi-Fi or cellular. When the receiver is unreachable, audio stays here until it can be uploaded.")
+                    Text("Use the pairing link generated by your receiver to fill these fields, or enter them by hand. The receiver must be reachable over HTTPS.")
                 }
                 if let error { Section { Text(error).foregroundStyle(.red) } }
             }
-            .navigationTitle("Pair your Mac")
+            .navigationTitle("Pair your receiver")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

@@ -14,6 +14,8 @@
 		8C34593B9CD5B393F7C90C6D /* NativeUploadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A0E11377963676F1DB20DB /* NativeUploadTests.swift */; };
 		C87128C9329B9A638C31BF46 /* RecorderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F1329E2C2FBAECB7B7FD74 /* RecorderTests.swift */; };
 		E84B72E8AEAE0DAE896AF8A6 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35B1754886B3F5500411113 /* Recorder.swift */; };
+		A1C0DE0000000000000000C1 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1C0DE0000000000000000A1 /* Localizable.strings */; };
+		A1C0DE0000000000000000C2 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1C0DE0000000000000000A2 /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +39,9 @@
 		93F1329E2C2FBAECB7B7FD74 /* RecorderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecorderTests.swift; sourceTree = "<group>"; };
 		979FEA5285A0B5B0F31DCFD4 /* ChunkWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkWriter.swift; sourceTree = "<group>"; };
 		B35B1754886B3F5500411113 /* Recorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recorder.swift; sourceTree = "<group>"; };
+		A1C0DE0000000000000000B1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A1C0DE0000000000000000B2 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		A1C0DE0000000000000000B3 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -45,6 +50,8 @@
 			children = (
 				979FEA5285A0B5B0F31DCFD4 /* ChunkWriter.swift */,
 				248F26ABAF4F063BA289ED46 /* Info.plist */,
+				A1C0DE0000000000000000A2 /* InfoPlist.strings */,
+				A1C0DE0000000000000000A1 /* Localizable.strings */,
 				39F3DBEC2972B9DED3119424 /* LifeRecorderApp.swift */,
 				B35B1754886B3F5500411113 /* Recorder.swift */,
 				1E138E288F79C8B5DE281250 /* Storage.swift */,
@@ -106,6 +113,7 @@
 			buildConfigurationList = 3D116A3BB9D8B5A57901C1B4 /* Build configuration list for PBXNativeTarget "LifeRecorder" */;
 			buildPhases = (
 				D1085235C0176EDF1C1C5AC2 /* Sources */,
+				A1C0DE0000000000000000D1 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -141,6 +149,7 @@
 			knownRegions = (
 				Base,
 				en,
+				"zh-Hans",
 			);
 			mainGroup = 73B7FA7CAE9609EDD56A6745;
 			minimizedProjectReferenceProxies = 1;
@@ -154,6 +163,18 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1C0DE0000000000000000D1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1C0DE0000000000000000C1 /* Localizable.strings in Resources */,
+				A1C0DE0000000000000000C2 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D1085235C0176EDF1C1C5AC2 /* Sources */ = {
@@ -186,6 +207,26 @@
 			targetProxy = 66F4F524359F4940955B3693 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		A1C0DE0000000000000000A2 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A1C0DE0000000000000000B3 /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		A1C0DE0000000000000000A1 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A1C0DE0000000000000000B1 /* en */,
+				A1C0DE0000000000000000B2 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		3F778BC7DF129C872B62D2D9 /* Debug */ = {

@@ -24,11 +24,11 @@ struct AudioInput: Identifiable, Equatable {
 
     var kind: String {
         switch type {
-        case .bluetoothHFP: return "Bluetooth"
+        case .bluetoothHFP: return String(localized: "Bluetooth")
         case .usbAudio: return "USB"
-        case .headsetMic: return "Headset"
+        case .headsetMic: return String(localized: "Headset")
         case .builtInMic: return "iPhone"
-        case .carAudio: return "Car"
+        case .carAudio: return String(localized: "Car")
         default: return type.rawValue
         }
     }
@@ -58,7 +58,7 @@ struct AudioInput: Identifiable, Equatable {
 final class Recorder: ObservableObject {
     @Published private(set) var enabled = UserDefaults.standard.bool(forKey: "recorderEnabled")
     @Published private(set) var recording = false
-    @Published private(set) var status = "Recorder is off"
+    @Published private(set) var status = String(localized: "Recorder is off")
     @Published private(set) var incompleteClips = 0
     @Published private(set) var currentInput: AudioInput?
     @Published private(set) var availableInputs: [AudioInput] = []
@@ -78,7 +78,7 @@ final class Recorder: ObservableObject {
     private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "LifeRecorder", category: "recorder")
 
     init() {
-        if enabled { status = "Ready to resume" }
+        if enabled { status = String(localized: "Ready to resume") }
         let center = NotificationCenter.default
         observers.append(center.addObserver(forName: AVAudioSession.interruptionNotification,
             object: nil, queue: .main) { [weak self] note in
@@ -108,7 +108,7 @@ final class Recorder: ObservableObject {
         else {
             await stopCapture()
             waitingForExternal = false
-            status = "Recorder is off"
+            status = String(localized: "Recorder is off")
         }
     }
 
@@ -151,9 +151,9 @@ final class Recorder: ObservableObject {
             let granted = await withCheckedContinuation { continuation in
                 AVAudioApplication.requestRecordPermission { continuation.resume(returning: $0) }
             }
-            guard granted else { status = "Allow microphone access in Settings to record"; return }
+            guard granted else { status = String(localized: "Allow microphone access in Settings to record"); return }
         } else if permission == .denied {
-            status = "Allow microphone access in Settings to record"
+            status = String(localized: "Allow microphone access in Settings to record")
             return
         }
         guard enabled else { return } // The switch may have changed during permission/recovery.
@@ -166,7 +166,7 @@ final class Recorder: ObservableObject {
             if requireExternalInput && currentInput?.isExternal != true {
                 // Keep the session so a reconnect in the foreground can resume; never fall back silently.
                 waitingForExternal = true
-                status = "No external microphone. Not recording."
+                status = String(localized: "No external microphone. Not recording.")
                 note("Holding: input is " + (currentInput?.label ?? "none"))
                 return
             }
@@ -176,7 +176,7 @@ final class Recorder: ObservableObject {
             let format = input.outputFormat(forBus: 0)
             guard format.sampleRate > 0 && format.channelCount > 0 else {
                 throw NSError(domain: "Recorder", code: 1,
-                    userInfo: [NSLocalizedDescriptionKey: "The microphone is unavailable. Reopen the app to retry."])
+                    userInfo: [NSLocalizedDescriptionKey: String(localized: "The microphone is unavailable. Reopen the app to retry.")])
             }
             let nextWriter = ChunkWriter(onChunk: {
                 DispatchQueue.main.async { UploadManager.shared.pump() }
@@ -207,19 +207,19 @@ final class Recorder: ObservableObject {
             lastStart = Date()
             let source = currentInput?.label ?? "unknown input"
             note("Recording from \(source), \(Int(format.sampleRate)) Hz, \(format.channelCount) ch")
-            status = currentInput?.isExternal == true ? "Recording, including when locked"
-                : "Recording with the iPhone microphone"
+            status = currentInput?.isExternal == true ? String(localized: "Recording, including when locked")
+                : String(localized: "Recording with the iPhone microphone")
         } catch {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
             note("Start failed: " + error.localizedDescription)
-            status = "Could not start: " + error.localizedDescription
+            status = String(localized: "Could not start: \(error.localizedDescription)")
         }
     }
 
     private static func configure(_ session: AVAudioSession) throws {
-        // .allowBluetooth (renamed .allowBluetoothHFP in iOS 26) is required for a Bluetooth mic to be an input.
+        // .allowBluetoothHFP is required for a Bluetooth mic to be an input.
         try session.setCategory(.playAndRecord, mode: .default,
-                                options: [.mixWithOthers, .defaultToSpeaker, .allowBluetooth])
+                                options: [.mixWithOthers, .defaultToSpeaker, .allowBluetoothHFP])
     }
 
     private func selectInput(_ session: AVAudioSession) {
@@ -285,7 +285,7 @@ final class Recorder: ObservableObject {
             interrupted = true
             note("Interruption began")
             await stopCapture(deactivate: false)
-            if enabled { status = "Interrupted by another audio session" }
+            if enabled { status = String(localized: "Interrupted by another audio session") }
         } else {
             interrupted = false
             let rawOptions = notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
@@ -293,7 +293,7 @@ final class Recorder: ObservableObject {
             note("Interruption ended" + (shouldResume ? "; resuming" : "; not allowed to resume"))
             if shouldResume {
                 await resumeIfEnabled(allowBackground: true)
-            } else if enabled { status = "Recording paused. Reopen the app to resume." }
+            } else if enabled { status = String(localized: "Recording paused. Reopen the app to resume.") }
         }
     }
 

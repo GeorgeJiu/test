@@ -8,7 +8,8 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
     static let shared = UploadManager()
     static let sessionID = "com.browseruse.liferecorder.uploads"
     @Published private(set) var pendingCount = 0
-    @Published private(set) var status = "Pair with your Mac to upload"
+    @Published private(set) var status = String(localized: "Pair with a receiver to upload")
+    @Published private(set) var storedBytes: Int64 = 0
     @Published private(set) var lastUploadedAt: Date?
     var backgroundCompletion: (() -> Void)?
     private var responseData: [Int: Data] = [:]
@@ -60,7 +61,8 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
         assert(Thread.isMainThread)
         let pending = QueueStore.pending()
         pendingCount = pending.count
-        guard let settings = ReceiverSettings.load() else { status = "Pair with your Mac to upload"; return }
+        storedBytes = QueueStore.storedAudioBytes()
+        guard let settings = ReceiverSettings.load() else { status = String(localized: "Pair with a receiver to upload"); return }
         guard !authenticationRejected else { return }
         guard !pumping else { return }
         pumping = true
@@ -89,7 +91,7 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
                     guard available > 0 else { break }
                     if let retry = self.retries[chunk.name], retry > Date() { continue }
                     guard FileManager.default.fileExists(atPath: chunk.audioURL.path) else {
-                        self.status = "A pending audio file is missing; its record has been retained"
+                        self.status = String(localized: "A pending audio file is missing; its record has been retained")
                         continue
                     }
                     let url = settings.baseURL.appendingPathComponent("v1/chunks").appendingPathComponent(chunk.name)
@@ -109,9 +111,9 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
                     task.resume()
                     available -= 1
                 }
-                if pending.isEmpty { self.status = "All completed audio uploaded" }
+                if pending.isEmpty { self.status = String(localized: "All completed audio uploaded") }
                 else if active.isEmpty && available == 2 { /* Keep the latest actionable error. */ }
-                else { self.status = "Uploading when connected" }
+                else { self.status = String(localized: "Uploading when connected") }
             }
         }
     }
@@ -160,8 +162,8 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
                 retries.removeValue(forKey: id)
                 failureCounts.removeValue(forKey: id)
                 lastUploadedAt = Date()
-                status = "Uploaded safely; local copy removed"
-            } catch { status = "Uploaded; local cleanup will retry on reopening" }
+                status = String(localized: "Uploaded safely; local copy removed")
+            } catch { status = String(localized: "Uploaded; local cleanup will retry on reopening") }
         } else {
             let failures = (failureCounts[id] ?? 0) + 1
             failureCounts[id] = failures
@@ -169,10 +171,10 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
             switch response?.statusCode {
             case 401:
                 authenticationRejected = true
-                status = "Pairing token rejected. Audio remains on this phone."
-            case 409: status = "Receiver reported a chunk conflict. Audio remains on this phone."
-            case 507: status = "Mac storage is full. Audio remains on this phone."
-            default: status = "Waiting to upload. Audio remains on this phone."
+                status = String(localized: "Pairing token rejected. Audio remains on this phone.")
+            case 409: status = String(localized: "Receiver reported a chunk conflict. Audio remains on this phone.")
+            case 507: status = String(localized: "Receiver storage is full. Audio remains on this phone.")
+            default: status = String(localized: "Waiting to upload. Audio remains on this phone.")
             }
         }
         pump()

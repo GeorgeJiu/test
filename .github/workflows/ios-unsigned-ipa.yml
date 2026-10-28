@@ -49,6 +49,9 @@ jobs:
           cp -R "$APP" out/Payload/
           (cd out && zip -qry LifeRecorder-unsigned.ipa Payload)
           lipo -info "$APP/LifeRecorder"
+          # Localizations must be in the bundle and compile to valid plists.
+          ls -d "$APP"/*.lproj
+          plutil -lint "$APP"/zh-Hans.lproj/*.strings
           plutil -p "$APP/Info.plist"
           {
             echo "commit: $GITHUB_SHA"

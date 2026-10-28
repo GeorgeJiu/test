@@ -48,7 +48,7 @@ final class ChunkWriter: @unchecked Sendable {
         let capacity = try QueueStore.directory.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
         if let free = capacity.volumeAvailableCapacityForImportantUsage, free < 200 * 1024 * 1024 {
             throw NSError(domain: "Recorder", code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Storage is nearly full. Pending audio is preserved; free space to resume."])
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Storage is nearly full. Pending audio is preserved; free space to resume.")])
         }
         sampleRate = format.sampleRate
         let next = RecordingJournal(id: UUID(), startedAt: startedAt.addingTimeInterval(Double(totalFrames) / sampleRate))
