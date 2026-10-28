@@ -1,0 +1,4 @@
+/* Simplified Chinese Siri phrases for App Shortcuts. */
+
+"Mark this moment in ${applicationName}" = "在${applicationName}中标记此刻";
+"${applicationName} mark this moment" = "${applicationName}标记此刻";

@@ -16,6 +16,8 @@
 		E84B72E8AEAE0DAE896AF8A6 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35B1754886B3F5500411113 /* Recorder.swift */; };
 		A1C0DE0000000000000000C1 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1C0DE0000000000000000A1 /* Localizable.strings */; };
 		A1C0DE0000000000000000C2 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1C0DE0000000000000000A2 /* InfoPlist.strings */; };
+		A1C0DE0000000000000000E2 /* MarkIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0DE0000000000000000E1 /* MarkIntent.swift */; };
+		A1C0DE0000000000000000E5 /* AppShortcuts.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1C0DE0000000000000000E3 /* AppShortcuts.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +44,8 @@
 		A1C0DE0000000000000000B1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A1C0DE0000000000000000B2 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		A1C0DE0000000000000000B3 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A1C0DE0000000000000000E1 /* MarkIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkIntent.swift; sourceTree = "<group>"; };
+		A1C0DE0000000000000000E4 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -53,6 +57,8 @@
 				A1C0DE0000000000000000A2 /* InfoPlist.strings */,
 				A1C0DE0000000000000000A1 /* Localizable.strings */,
 				39F3DBEC2972B9DED3119424 /* LifeRecorderApp.swift */,
+				A1C0DE0000000000000000E3 /* AppShortcuts.strings */,
+				A1C0DE0000000000000000E1 /* MarkIntent.swift */,
 				B35B1754886B3F5500411113 /* Recorder.swift */,
 				1E138E288F79C8B5DE281250 /* Storage.swift */,
 				4912CAE16CD5C6C2B739463D /* UploadManager.swift */,
@@ -171,6 +177,7 @@
 			files = (
 				A1C0DE0000000000000000C1 /* Localizable.strings in Resources */,
 				A1C0DE0000000000000000C2 /* InfoPlist.strings in Resources */,
+				A1C0DE0000000000000000E5 /* AppShortcuts.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -184,6 +191,7 @@
 				1F2B7EE6A773F6B72AC416FA /* ChunkWriter.swift in Sources */,
 				49B7E576C31EC0BB95B19780 /* LifeRecorderApp.swift in Sources */,
 				E84B72E8AEAE0DAE896AF8A6 /* Recorder.swift in Sources */,
+				A1C0DE0000000000000000E2 /* MarkIntent.swift in Sources */,
 				54662EB8B6B32A2F28B52B84 /* Storage.swift in Sources */,
 				066F079475FA4272323846E7 /* UploadManager.swift in Sources */,
 			);
@@ -224,6 +232,14 @@
 				A1C0DE0000000000000000B2 /* zh-Hans */,
 			);
 			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		A1C0DE0000000000000000E3 /* AppShortcuts.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A1C0DE0000000000000000E4 /* zh-Hans */,
+			);
+			name = AppShortcuts.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */

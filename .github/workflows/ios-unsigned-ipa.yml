@@ -52,6 +52,8 @@ jobs:
           # Localizations must be in the bundle and compile to valid plists.
           ls -d "$APP"/*.lproj
           plutil -lint "$APP"/zh-Hans.lproj/*.strings
+          # App Intents metadata is what makes "Mark this moment" appear in Shortcuts and the Action Button.
+          ls -d "$APP"/Metadata.appintents
           plutil -p "$APP/Info.plist"
           {
             echo "commit: $GITHUB_SHA"
