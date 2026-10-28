@@ -87,7 +87,6 @@ class Inbox:
                 note TEXT NOT NULL DEFAULT '', received REAL NOT NULL)""")
         # Recover a crash after a transcript transaction but before Markdown refresh.
         self.export()
-        self.cleanup_completed()
 
     def connect(self):
         db = sqlite3.connect(self.db, timeout=30)
@@ -135,14 +134,7 @@ class Inbox:
                 db.execute("UPDATE chunks SET status='complete',transcript=?,error=NULL WHERE id=?",
                            (transcript, chunk_id))
             self.export()
-            # Never delete the remote audio until both DB and Markdown are durable.
-            self.cleanup_completed()
-
-    def cleanup_completed(self):
-        with self.connect() as db:
-            rows = db.execute("SELECT path FROM chunks WHERE status='complete'").fetchall()
-        for row in rows:
-            Path(row["path"]).unlink(missing_ok=True)
+            # Original audio is kept permanently; transcripts are derived data.
 
     def export(self):
         with self.lock, self.connect() as db:

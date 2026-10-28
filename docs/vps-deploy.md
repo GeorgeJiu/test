@@ -182,6 +182,45 @@ sudo python3 /opt/life-recorder-src/receiver/inbox_status.py
 
 断网测试：录音时打开飞行模式 3 分钟，再关闭。断网期间的片段会留在手机上，联网后自动补传；服务器对重复上传自动去重。
 
+## 6b. 转写（可选，本机 CPU，不用显卡）
+
+转写使用 SenseVoice（普通话准确率高，自带标点）+ sherpa-onnx（不依赖 PyTorch/CUDA）。
+服务以 **idle 调度优先级**运行：只使用其他程序（如训练）不用的 CPU 时间，**不访问显卡**，不联网。
+原始音频永远保留；转写结果按天写入 `/srv/life-recorder/transcripts/YYYY-MM-DD.md`，重点标记以 ⭐ 插入对应时间点。
+实测：60 秒录音在 4 线程下约 1.5 秒转完。
+
+安装依赖：
+
+```bash
+sudo apt install -y ffmpeg python3-venv
+```
+
+更新代码并安装转写服务（模型约 1 GB，从 GitHub 下载；国内 pip 慢时可加 `--pip-index-url https://pypi.tuna.tsinghua.edu.cn/simple`）：
+
+```bash
+sudo git -C /opt/life-recorder-src pull
+```
+
+```bash
+sudo python3 /opt/life-recorder-src/receiver/setup_transcriber.py
+```
+
+安装时会先用模型自带的普通话样例自检，输出一行识别结果。已上传的历史录音会按时间顺序自动补转。
+
+查看进度：
+
+```bash
+sudo journalctl -u life-recorder-transcriber -f
+```
+
+查看今天的转写（日期换成实际日期）：
+
+```bash
+sudo cat /srv/life-recorder/transcripts/2026-10-28.md
+```
+
+`inbox_status.py` 的输出里也有 `Transcription: N done, M waiting` 一行。
+
 ## 7. 日常运维
 
 查看服务状态：

@@ -29,6 +29,11 @@ size = sum(f.stat().st_size for f in present)
 hours = sum(r["duration"] for r in rows) / 3600
 print(f"Chunks: {len(rows)} ({len(present)} audio files on disk, {size / 1e6:.1f} MB, {hours:.2f} h)")
 print(f"Audio folder: {args.data_dir / 'audio'}")
+transcribed = sum(r["status"] == "transcribed" for r in rows)
+retrying = sum(r["status"] == "pending" and r["attempts"] > 0 for r in rows)
+waiting = sum(r["status"] == "pending" for r in rows)
+print(f"Transcription: {transcribed} done, {waiting} waiting ({retrying} retrying after errors); "
+      f"daily files in {args.data_dir / 'transcripts'}")
 zone = datetime.now().astimezone().strftime("%Z (UTC%z)")
 print(f"Times shown in the server time zone: {zone}")
 for r in rows[:args.last]:
