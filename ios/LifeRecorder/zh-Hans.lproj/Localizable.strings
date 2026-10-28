@@ -21,6 +21,7 @@
 "Only record from an external microphone" = "只用外接麦克风录音";
 "Recent audio events" = "最近的音频事件";
 "No events yet" = "暂无事件";
+"Recent upload events" = "最近的上传事件";
 "Where recordings are saved" = "录音保存位置";
 "On this iPhone: Files › On My iPhone › Life Recorder › Recordings" = "本机：“文件” App › 我的 iPhone › Life Recorder › Recordings";
 "%lld clips, %@ on this iPhone" = "本机共 %lld 段，%@";

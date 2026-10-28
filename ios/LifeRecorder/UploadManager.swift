@@ -1,6 +1,7 @@
 import Combine
 import CryptoKit
 import Foundation
+import os
 import Security
 import UIKit
 
@@ -11,6 +12,7 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
     @Published private(set) var status = String(localized: "Pair with a receiver to upload")
     @Published private(set) var storedBytes: Int64 = 0
     @Published private(set) var lastUploadedAt: Date?
+    @Published private(set) var events: [String] = []
     var backgroundCompletion: (() -> Void)?
     private var responseData: [Int: Data] = [:]
     private var retries: [String: Date] = [:]
@@ -109,6 +111,7 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
                         .map(Int64.init) ?? NSURLSessionTransferSizeUnknown
                     task.countOfBytesClientExpectsToReceive = 512
                     task.resume()
+                    self.note("Upload started: \(chunk.name.prefix(8))")
                     available -= 1
                 }
                 if pending.isEmpty { self.status = String(localized: "All completed audio uploaded") }
@@ -116,6 +119,22 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
                 else { self.status = String(localized: "Uploading when connected") }
             }
         }
+    }
+
+    private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "LifeRecorder", category: "upload")
+
+    /// Short on-screen history so upload failures can be diagnosed on the phone.
+    private func note(_ message: String) {
+        Self.log.notice("\(message, privacy: .public)")
+        events.insert(Date().formatted(date: .omitted, time: .standard) + "  " + message, at: 0)
+        if events.count > 50 { events.removeLast(events.count - 50) }
+    }
+
+    private static func describe(_ error: Error?, _ response: HTTPURLResponse?, _ data: Data) -> String {
+        if let error = error as NSError? { return "\(error.domain) \(error.code): \(error.localizedDescription)" }
+        guard let response else { return "no response" }
+        let body = String(data: data.prefix(200), encoding: .utf8) ?? ""
+        return "HTTP \(response.statusCode) \(body)"
     }
 
     private static func timestamp(_ date: Date) -> String {
@@ -162,9 +181,11 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
                 retries.removeValue(forKey: id)
                 failureCounts.removeValue(forKey: id)
                 lastUploadedAt = Date()
+                note("Uploaded: \(id.prefix(8)) (HTTP \(response.statusCode))")
                 status = String(localized: "Uploaded safely; local copy removed")
             } catch { status = String(localized: "Uploaded; local cleanup will retry on reopening") }
         } else {
+            note("Upload failed: \(id.prefix(8)): " + Self.describe(error, response, data))
             let failures = (failureCounts[id] ?? 0) + 1
             failureCounts[id] = failures
             retries[id] = Date().addingTimeInterval(min(1800, 15 * pow(2, Double(min(failures, 7)))))
@@ -201,7 +222,10 @@ final class UploadManager: NSObject, ObservableObject, URLSessionDataDelegate, U
             .map { String(format: "%02x", $0) }.joined()
         if hash == settings.certificateSHA256 {
             completionHandler(.useCredential, URLCredential(trust: trust))
-        } else { completionHandler(.cancelAuthenticationChallenge, nil) }
+        } else {
+            note("Server certificate does not match the paired fingerprint")
+            completionHandler(.cancelAuthenticationChallenge, nil)
+        }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask,

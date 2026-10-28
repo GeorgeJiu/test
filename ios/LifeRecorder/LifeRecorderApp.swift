@@ -96,6 +96,14 @@ struct ContentView: View {
                             Text("\(recorder.incompleteClips) interrupted clips need recovery. They remain on this phone.")
                                 .foregroundStyle(.orange)
                         }
+                        DisclosureGroup("Recent upload events") {
+                            VStack(alignment: .leading, spacing: 4) {
+                                if uploads.events.isEmpty { Text("No events yet").foregroundStyle(.secondary) }
+                                ForEach(Array(uploads.events.enumerated()), id: \.offset) { _, event in
+                                    Text(event).font(.caption.monospaced()).textSelection(.enabled)
+                                }
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                     StorageSection(uploads: uploads)
                     Text("Records with the screen locked. After restarting the phone or force-quitting, open this app once to resume. Switching off stays off.")
