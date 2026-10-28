@@ -3,6 +3,7 @@ import Combine
 import Foundation
 import os
 import UIKit
+import UserNotifications
 
 /// One microphone the audio session can record from.
 struct AudioInput: Identifiable, Equatable {
@@ -21,6 +22,7 @@ struct AudioInput: Identifiable, Equatable {
     }
 
     var isExternal: Bool { type != .builtInMic }
+    var isBluetooth: Bool { type == .bluetoothHFP }
 
     var kind: String {
         switch type {
@@ -35,11 +37,11 @@ struct AudioInput: Identifiable, Equatable {
 
     var label: String { "\(name) (\(kind))" }
 
-    /// Automatic choice prefers a Bluetooth mic (e.g. a DJI transmitter connected directly),
-    /// then a wired/USB receiver, and the built-in microphone last.
+    /// Automatic choice prefers a DJI transmitter connected directly, then a wired/USB receiver,
+    /// then other Bluetooth devices (which may be phones or headsets), and the built-in microphone last.
     private var rank: Int {
         switch type {
-        case .bluetoothHFP: return 0
+        case .bluetoothHFP: return name.localizedCaseInsensitiveContains("DJI") ? 0 : 3
         case .usbAudio: return 1
         case .headsetMic: return 2
         case .builtInMic: return 9
@@ -47,9 +49,12 @@ struct AudioInput: Identifiable, Equatable {
         }
     }
 
-    /// The saved choice when it is connected, otherwise the best-ranked input.
-    static func choose(from inputs: [AudioInput], preferredID: String?) -> AudioInput? {
-        if let preferredID, let saved = inputs.first(where: { $0.id == preferredID }) { return saved }
+    /// A microphone that was chosen (by the user, or automatically when recording started) is never
+    /// silently replaced by another external device: while it is missing, use the built-in mic.
+    static func choose(from inputs: [AudioInput], preferredID: String?, sessionID: String?) -> AudioInput? {
+        if let wanted = preferredID ?? sessionID {
+            return inputs.first { $0.id == wanted } ?? inputs.first { $0.type == .builtInMic }
+        }
         return inputs.min { $0.rank < $1.rank }
     }
 }
@@ -65,6 +70,8 @@ final class Recorder: ObservableObject {
     @Published private(set) var preferredInputID = UserDefaults.standard.string(forKey: "preferredInputID")
     @Published private(set) var requireExternalInput = UserDefaults.standard.bool(forKey: "requireExternalInput")
     @Published private(set) var waitingForExternal = false
+    /// Set while the microphone recording started with is missing; shown in red and sent as a notification.
+    @Published private(set) var microphoneWarning: String?
     @Published private(set) var events: [String] = []
     private var engine: AVAudioEngine?
     private var engineObserver: NSObjectProtocol?
@@ -74,6 +81,8 @@ final class Recorder: ObservableObject {
     private var recovered = false
     private var interrupted = false
     private var lastStart = Date.distantPast
+    /// The external microphone this recording session started with.
+    private var sessionInput: AudioInput?
     private var observers: [NSObjectProtocol] = []
     private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "LifeRecorder", category: "recorder")
 
@@ -104,10 +113,15 @@ final class Recorder: ObservableObject {
     func setEnabled(_ value: Bool) async {
         enabled = value
         UserDefaults.standard.set(value, forKey: "recorderEnabled")
-        if value { await resumeIfEnabled() }
-        else {
+        if value {
+            // Disconnect alerts must reach a locked phone.
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+            await resumeIfEnabled()
+        } else {
             await stopCapture()
             waitingForExternal = false
+            sessionInput = nil
+            microphoneWarning = nil
             status = String(localized: "Recorder is off")
         }
     }
@@ -116,6 +130,8 @@ final class Recorder: ObservableObject {
     func setPreferredInput(_ id: String?) async {
         preferredInputID = id
         UserDefaults.standard.set(id, forKey: "preferredInputID")
+        sessionInput = nil
+        microphoneWarning = nil
         note("Preferred input: " + (id.flatMap { id in availableInputs.first { $0.id == id }?.label } ?? "automatic"))
         await restartIfActive()
     }
@@ -163,6 +179,7 @@ final class Recorder: ObservableObject {
             try audioSession.setActive(true)
             selectInput(audioSession)
             refreshInputs()
+            updateMicrophoneWarning()
             if requireExternalInput && currentInput?.isExternal != true {
                 // Keep the session so a reconnect in the foreground can resume; never fall back silently.
                 waitingForExternal = true
@@ -205,6 +222,7 @@ final class Recorder: ObservableObject {
             writer = nextWriter
             recording = true
             lastStart = Date()
+            if sessionInput == nil, let current = currentInput, current.isExternal { sessionInput = current }
             let source = currentInput?.label ?? "unknown input"
             note("Recording from \(source), \(Int(format.sampleRate)) Hz, \(format.channelCount) ch")
             status = currentInput?.isExternal == true ? String(localized: "Recording, including when locked")
@@ -224,14 +242,44 @@ final class Recorder: ObservableObject {
 
     private func selectInput(_ session: AVAudioSession) {
         let inputs = (session.availableInputs ?? []).map(AudioInput.init)
-        guard let choice = AudioInput.choose(from: inputs, preferredID: preferredInputID) else { return }
+        guard let choice = AudioInput.choose(from: inputs, preferredID: preferredInputID, sessionID: sessionInput?.id)
+        else { return }
         do {
-            // Leave the built-in mic unpinned so iOS can follow a microphone that connects later.
-            let port = choice.isExternal ? session.availableInputs?.first(where: { $0.uid == choice.id }) : nil
-            try session.setPreferredInput(port)
+            // Pin even the built-in mic: otherwise iOS may switch to whichever Bluetooth device it likes.
+            // A reconnecting microphone is picked up by the route-change handler instead.
+            try session.setPreferredInput(session.availableInputs?.first(where: { $0.uid == choice.id }))
         } catch {
             note("Could not select \(choice.label): \(error.localizedDescription)")
         }
+    }
+
+    /// Compares the live input with the session's microphone and alerts once per change.
+    private func updateMicrophoneWarning() {
+        guard let expected = sessionInput else { microphoneWarning = nil; return }
+        if currentInput?.id == expected.id {
+            guard microphoneWarning != nil else { return }
+            microphoneWarning = nil
+            note("\(expected.label) is back")
+            Self.notify(title: String(localized: "Microphone reconnected"),
+                        body: String(localized: "\(expected.name) reconnected. Recording with it again."))
+            return
+        }
+        let message = requireExternalInput
+            ? String(localized: "\(expected.name) disconnected. Recording is paused. Reconnect it, then open the app to resume.")
+            : String(localized: "\(expected.name) disconnected. Recording with the iPhone microphone.")
+        guard microphoneWarning != message else { return }
+        microphoneWarning = message
+        note("\(expected.label) missing; input is \(currentInput?.label ?? "none")")
+        Self.notify(title: String(localized: "Microphone disconnected"), body: message)
+    }
+
+    private static func notify(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString,
+                                                                     content: content, trigger: nil))
     }
 
     private func handleRouteChange(_ reason: AVAudioSession.RouteChangeReason?) async {

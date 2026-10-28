@@ -18,7 +18,13 @@
 "Microphone" = "麦克风";
 "Automatic (external first)" = "自动（优先外接）";
 "Saved microphone (not connected)" = "已保存的麦克风（未连接）";
-"Only record from an external microphone" = "只用外接麦克风录音";
+"Only record from the chosen external microphone" = "只用选定的外接麦克风录音";
+"Several Bluetooth devices are connected. Choose your microphone below so recording never switches to another device." = "连接了多个蓝牙设备。请在下方选定你的麦克风，避免录音切换到其他设备。";
+"Microphone reconnected" = "麦克风已重新连接";
+"%@ reconnected. Recording with it again." = "%@ 已重新连接，已恢复用它录音。";
+"%@ disconnected. Recording is paused. Reconnect it, then open the app to resume." = "%@ 已断开，录音已暂停。重新连接后，请打开 App 恢复录音。";
+"%@ disconnected. Recording with the iPhone microphone." = "%@ 已断开，正在用 iPhone 麦克风录音。";
+"Microphone disconnected" = "麦克风已断开";
 "Recent audio events" = "最近的音频事件";
 "No events yet" = "暂无事件";
 "Recent upload events" = "最近的上传事件";

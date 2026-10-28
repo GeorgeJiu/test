@@ -126,13 +126,19 @@ struct InputSection: View {
             Label(recorder.currentInput.map { String(localized: "Input: \($0.label)") } ?? String(localized: "Input: none"),
                   systemImage: recorder.currentInput?.isExternal == true ? "mic.fill" : "iphone")
                 .font(.headline)
-            if recorder.recording && recorder.currentInput?.isExternal != true {
+            if let warning = recorder.microphoneWarning {
+                Text(warning).font(.headline).foregroundStyle(.red)
+            } else if recorder.recording && recorder.currentInput?.isExternal != true {
                 Text("Recording from the iPhone's own microphone, not an external mic.")
                     .foregroundStyle(.orange)
             }
-            if recorder.waitingForExternal {
+            if recorder.waitingForExternal && recorder.microphoneWarning == nil {
                 Text("Waiting for an external microphone. Nothing is being recorded. If the screen is locked, reopen the app after reconnecting.")
                     .foregroundStyle(.red)
+            }
+            if recorder.preferredInputID == nil && recorder.availableInputs.filter(\.isBluetooth).count > 1 {
+                Text("Several Bluetooth devices are connected. Choose your microphone below so recording never switches to another device.")
+                    .font(.footnote).foregroundStyle(.orange)
             }
             Picker("Microphone", selection: Binding(get: { recorder.preferredInputID ?? "" },
                                                     set: { id in Task { await recorder.setPreferredInput(id.isEmpty ? nil : id) } })) {
@@ -142,7 +148,7 @@ struct InputSection: View {
                     Text("Saved microphone (not connected)").tag(saved)
                 }
             }
-            Toggle("Only record from an external microphone", isOn: Binding(get: { recorder.requireExternalInput },
+            Toggle("Only record from the chosen external microphone", isOn: Binding(get: { recorder.requireExternalInput },
                                                                          set: { value in Task { await recorder.setRequireExternalInput(value) } }))
             DisclosureGroup("Recent audio events") {
                 VStack(alignment: .leading, spacing: 4) {
