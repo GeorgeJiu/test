@@ -1,0 +1,415 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		066F079475FA4272323846E7 /* UploadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4912CAE16CD5C6C2B739463D /* UploadManager.swift */; };
+		1F2B7EE6A773F6B72AC416FA /* ChunkWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979FEA5285A0B5B0F31DCFD4 /* ChunkWriter.swift */; };
+		49B7E576C31EC0BB95B19780 /* LifeRecorderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F3DBEC2972B9DED3119424 /* LifeRecorderApp.swift */; };
+		54662EB8B6B32A2F28B52B84 /* Storage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E138E288F79C8B5DE281250 /* Storage.swift */; };
+		8C34593B9CD5B393F7C90C6D /* NativeUploadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A0E11377963676F1DB20DB /* NativeUploadTests.swift */; };
+		C87128C9329B9A638C31BF46 /* RecorderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F1329E2C2FBAECB7B7FD74 /* RecorderTests.swift */; };
+		E84B72E8AEAE0DAE896AF8A6 /* Recorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35B1754886B3F5500411113 /* Recorder.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		66F4F524359F4940955B3693 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FBE37FE1F42A0BC2B17BE950 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DBE1F1D5E440E3A72A76DA1C;
+			remoteInfo = LifeRecorder;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1E138E288F79C8B5DE281250 /* Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage.swift; sourceTree = "<group>"; };
+		1EE7061AC1E987E130601AC9 /* LifeRecorderTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LifeRecorderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		248F26ABAF4F063BA289ED46 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		39F3DBEC2972B9DED3119424 /* LifeRecorderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeRecorderApp.swift; sourceTree = "<group>"; };
+		4912CAE16CD5C6C2B739463D /* UploadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadManager.swift; sourceTree = "<group>"; };
+		73A0E11377963676F1DB20DB /* NativeUploadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeUploadTests.swift; sourceTree = "<group>"; };
+		7C47086B1533C94C651B4CCF /* LifeRecorder.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LifeRecorder.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		93F1329E2C2FBAECB7B7FD74 /* RecorderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecorderTests.swift; sourceTree = "<group>"; };
+		979FEA5285A0B5B0F31DCFD4 /* ChunkWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkWriter.swift; sourceTree = "<group>"; };
+		B35B1754886B3F5500411113 /* Recorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recorder.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2413F16E452318A11E779BB2 /* LifeRecorder */ = {
+			isa = PBXGroup;
+			children = (
+				979FEA5285A0B5B0F31DCFD4 /* ChunkWriter.swift */,
+				248F26ABAF4F063BA289ED46 /* Info.plist */,
+				39F3DBEC2972B9DED3119424 /* LifeRecorderApp.swift */,
+				B35B1754886B3F5500411113 /* Recorder.swift */,
+				1E138E288F79C8B5DE281250 /* Storage.swift */,
+				4912CAE16CD5C6C2B739463D /* UploadManager.swift */,
+			);
+			path = LifeRecorder;
+			sourceTree = "<group>";
+		};
+		73B7FA7CAE9609EDD56A6745 = {
+			isa = PBXGroup;
+			children = (
+				2413F16E452318A11E779BB2 /* LifeRecorder */,
+				BED0986A77D2064BB37D7CFD /* LifeRecorderTests */,
+				CFC7CCB19F17282282914627 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BED0986A77D2064BB37D7CFD /* LifeRecorderTests */ = {
+			isa = PBXGroup;
+			children = (
+				73A0E11377963676F1DB20DB /* NativeUploadTests.swift */,
+				93F1329E2C2FBAECB7B7FD74 /* RecorderTests.swift */,
+			);
+			path = LifeRecorderTests;
+			sourceTree = "<group>";
+		};
+		CFC7CCB19F17282282914627 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7C47086B1533C94C651B4CCF /* LifeRecorder.app */,
+				1EE7061AC1E987E130601AC9 /* LifeRecorderTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B783F8B8E7C1A2E6020AAA56 /* LifeRecorderTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 19FC56F35461367086C25517 /* Build configuration list for PBXNativeTarget "LifeRecorderTests" */;
+			buildPhases = (
+				D4C67BEF3D7103A96489DBA7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				045D7D2D200BDF35612D8941 /* PBXTargetDependency */,
+			);
+			name = LifeRecorderTests;
+			packageProductDependencies = (
+			);
+			productName = LifeRecorderTests;
+			productReference = 1EE7061AC1E987E130601AC9 /* LifeRecorderTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		DBE1F1D5E440E3A72A76DA1C /* LifeRecorder */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3D116A3BB9D8B5A57901C1B4 /* Build configuration list for PBXNativeTarget "LifeRecorder" */;
+			buildPhases = (
+				D1085235C0176EDF1C1C5AC2 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LifeRecorder;
+			packageProductDependencies = (
+			);
+			productName = LifeRecorder;
+			productReference = 7C47086B1533C94C651B4CCF /* LifeRecorder.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FBE37FE1F42A0BC2B17BE950 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					B783F8B8E7C1A2E6020AAA56 = {
+						ProvisioningStyle = Automatic;
+					};
+					DBE1F1D5E440E3A72A76DA1C = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 3EFEE00ACA1DBFC770635AD8 /* Build configuration list for PBXProject "LifeRecorder" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 73B7FA7CAE9609EDD56A6745;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CFC7CCB19F17282282914627 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DBE1F1D5E440E3A72A76DA1C /* LifeRecorder */,
+				B783F8B8E7C1A2E6020AAA56 /* LifeRecorderTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D1085235C0176EDF1C1C5AC2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F2B7EE6A773F6B72AC416FA /* ChunkWriter.swift in Sources */,
+				49B7E576C31EC0BB95B19780 /* LifeRecorderApp.swift in Sources */,
+				E84B72E8AEAE0DAE896AF8A6 /* Recorder.swift in Sources */,
+				54662EB8B6B32A2F28B52B84 /* Storage.swift in Sources */,
+				066F079475FA4272323846E7 /* UploadManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D4C67BEF3D7103A96489DBA7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8C34593B9CD5B393F7C90C6D /* NativeUploadTests.swift in Sources */,
+				C87128C9329B9A638C31BF46 /* RecorderTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		045D7D2D200BDF35612D8941 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DBE1F1D5E440E3A72A76DA1C /* LifeRecorder */;
+			targetProxy = 66F4F524359F4940955B3693 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3F778BC7DF129C872B62D2D9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.browseruse.LifeRecorderTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LifeRecorder.app/LifeRecorder";
+			};
+			name = Debug;
+		};
+		A471AC8830658A79EBF98EF0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LifeRecorder/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.browseruse.liferecorder;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B520043D7F3BE03D8D40413D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LifeRecorder/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.browseruse.liferecorder;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CFD5BDDE52D9400FB08D71E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		EEBE7E01335C383E020E4DD7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F178535BEDEE9B37EA15CEE8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.browseruse.LifeRecorderTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LifeRecorder.app/LifeRecorder";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		19FC56F35461367086C25517 /* Build configuration list for PBXNativeTarget "LifeRecorderTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3F778BC7DF129C872B62D2D9 /* Debug */,
+				F178535BEDEE9B37EA15CEE8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3D116A3BB9D8B5A57901C1B4 /* Build configuration list for PBXNativeTarget "LifeRecorder" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B520043D7F3BE03D8D40413D /* Debug */,
+				A471AC8830658A79EBF98EF0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3EFEE00ACA1DBFC770635AD8 /* Build configuration list for PBXProject "LifeRecorder" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EEBE7E01335C383E020E4DD7 /* Debug */,
+				CFD5BDDE52D9400FB08D71E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FBE37FE1F42A0BC2B17BE950 /* Project object */;
+}

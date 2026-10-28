@@ -1,0 +1,78 @@
+# Builds an UNSIGNED LifeRecorder IPA for re-signing on the phone (e.g. 轻松签).
+# No certificate, password or provisioning profile is read or stored here.
+name: iOS unsigned IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: "Bundle ID (match your provisioning profile; the signing app can also change it)"
+        required: false
+        default: "com.browseruse.liferecorder"
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-unsigned-ipa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      BUNDLE_ID: ${{ inputs.bundle_id || 'com.browseruse.liferecorder' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain and project
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcodebuild -showsdks
+          xcodebuild -list -project ios/LifeRecorder.xcodeproj
+
+      # The project has no shared scheme, so build the app target directly.
+      - name: Build (Release, iphoneos, no signing)
+        run: |
+          set -o pipefail
+          mkdir -p out
+          xcodebuild -project ios/LifeRecorder.xcodeproj -target LifeRecorder -configuration Release -sdk iphoneos SYMROOT="$PWD/build" PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build 2>&1 | tee out/build.log
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          APP="build/Release-iphoneos/LifeRecorder.app"
+          test -d "$APP"
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          (cd out && zip -qry LifeRecorder-unsigned.ipa Payload)
+          lipo -info "$APP/LifeRecorder"
+          plutil -p "$APP/Info.plist"
+          {
+            echo "commit: $GITHUB_SHA"
+            echo "ref: $GITHUB_REF_NAME"
+            echo "bundle_id: $BUNDLE_ID"
+            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            xcodebuild -version
+            echo "UNSIGNED: re-sign before installing."
+          } > out/build-info.txt
+          cat out/build-info.txt
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: LifeRecorder-unsigned-ipa-${{ github.sha }}
+          path: |
+            out/LifeRecorder-unsigned.ipa
+            out/build-info.txt
+          if-no-files-found: error
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ github.sha }}
+          path: out/build.log
+          if-no-files-found: ignore
