@@ -29,6 +29,8 @@ INSTALL_DIR = Path("/opt/life-recorder")
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--address", required=True, help="Public IP or hostname the iPhone will connect to")
 parser.add_argument("--port", type=int, default=8765)
+parser.add_argument("--listen", default="0.0.0.0",
+                    help="Interface to listen on; use 127.0.0.1 behind a tunnel such as frp")
 parser.add_argument("--data-dir", type=Path, default=Path("/srv/life-recorder"))
 parser.add_argument("--install-service", action="store_true",
                     help="Create the service user and a systemd service, then start it (needs root)")
@@ -42,6 +44,11 @@ except ValueError:
         parser.error("--address must be a bare IP address or hostname")
 if not 0 < args.port < 65536:
     parser.error("--port is out of range")
+try:
+    if ipaddress.ip_address(args.listen).version != 4:
+        raise ValueError
+except ValueError:
+    parser.error("--listen must be an IPv4 address such as 0.0.0.0 or 127.0.0.1")
 if args.install_service and os.geteuid() != 0:
     parser.error("--install-service must be run with sudo")
 
@@ -116,7 +123,7 @@ if args.install_service:
     shutil.copyfile(Path(__file__).with_name("receiver.py"), target)
     os.chmod(target, 0o644)
     hand_over_to_service_user()
-    command = (f"/usr/bin/python3 {target} --data-dir {root} --host 0.0.0.0 --port {args.port}"
+    command = (f"/usr/bin/python3 {target} --data-dir {root} --host {args.listen} --port {args.port}"
                f" --cert {cert} --key {key}")
     unit = f"""[Unit]
 Description=Life Recorder audio receiver

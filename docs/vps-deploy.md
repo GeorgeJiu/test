@@ -62,6 +62,86 @@ sudo python3 /opt/life-recorder-src/receiver/setup_linux.py --address <你的公
 
 **二维码和配对链接里有你的私密令牌，不要截图发给别人，也不要贴到聊天里（包括发给我）。**
 
+## 3b. 没有公网 IP、通过 frp 中转时
+
+适用于：内网服务器运行 `frpc`（由 systemd 管理），把端口映射到一台有公网 IP 的中转服务器（运行 `frps`）。
+以下以中转服务器 `<中转服务器IP>`、端口 `18765` 为例；8765 已被占用时就用 18765。
+
+**第 3 步改用下面的命令**（地址填中转服务器的公网 IP，接收端只监听本机，外界只能经 frp 访问）：
+
+```bash
+sudo python3 /opt/life-recorder-src/receiver/setup_linux.py --address <中转服务器IP> --port 18765 --listen 127.0.0.1 --install-service
+```
+
+然后在**内网服务器**上给 frpc 加一条映射。注意：你的 SSH 本身走 frp，重启 frpc 时 SSH 会断开几秒；
+下面先设置"3 分钟后自动回滚"，万一配置出错也能自动恢复，不会把自己锁在外面。
+
+备份当前配置：
+
+```bash
+sudo cp /opt/frp/frpc.toml /opt/frp/frpc.toml.bak
+```
+
+追加映射（整段一起复制粘贴）：
+
+```bash
+sudo tee -a /opt/frp/frpc.toml > /dev/null <<'EOF'
+
+[[proxies]]
+name = "life-recorder"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 18765
+remotePort = 18765
+EOF
+```
+
+检查配置语法（应显示 `syntax is ok`；如果报错，先别继续，把报错发我）：
+
+```bash
+sudo /opt/frp/frpc verify -c /opt/frp/frpc.toml
+```
+
+设置自动回滚保险（3 分钟后恢复备份并重启 frpc，除非你手动取消）：
+
+```bash
+sudo systemd-run --on-active=180 --unit=frpc-rollback /bin/sh -c "cp /opt/frp/frpc.toml.bak /opt/frp/frpc.toml && systemctl restart frpc"
+```
+
+重启 frpc（执行后 SSH 会断开，等 10 秒左右重新 SSH 登录）：
+
+```bash
+sudo systemctl restart frpc
+```
+
+重新登录后，查看新映射是否成功（应看到 `[life-recorder] start proxy success`）：
+
+```bash
+sudo journalctl -u frpc -n 20 --no-pager
+```
+
+一切正常就取消自动回滚（**必须在 3 分钟内执行**，否则配置会被恢复成旧的）：
+
+```bash
+sudo systemctl stop frpc-rollback.timer
+```
+
+如果日志里 life-recorder 报错（比如 `port not allowed`），说明中转服务器的 frps 限制了可用端口，见下一节。
+
+**中转服务器上**（登录 `<中转服务器IP>` 操作）：
+
+- 如果 frps 配置里有 `allowPorts`，要把 18765 加进去，然后重启 frps；
+- 在云服务商控制台（例如腾讯云"安全组"或"防火墙"）放行 **TCP 18765** 入站。
+
+做完后，在 Mac 上检查（返回 `{"error": "Unauthorized"}` 就说明整条链路通了）：
+
+```bash
+curl -k https://<中转服务器IP>:18765/health
+```
+
+这种方式下，内网服务器不需要执行第 4 步的 ufw 放行（frpc 从本机连接接收端）。
+录音数据经过中转服务器时是 TLS 加密的，中转服务器看不到内容。
+
 ## 4. 放行端口
 
 如果启用了 ufw 防火墙（脚本会提示）：
