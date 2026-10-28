@@ -25,7 +25,10 @@ size = sum(f.stat().st_size for f in present)
 hours = sum(r["duration"] for r in rows) / 3600
 print(f"Chunks: {len(rows)} ({len(present)} audio files on disk, {size / 1e6:.1f} MB, {hours:.2f} h)")
 print(f"Audio folder: {args.data_dir / 'audio'}")
+zone = datetime.now().astimezone().strftime("%Z (UTC%z)")
+print(f"Times shown in the server time zone: {zone}")
 for r in rows[:args.last]:
     received = datetime.fromtimestamp(r["received"]).strftime("%Y-%m-%d %H:%M:%S")
+    recorded = datetime.fromisoformat(r["started"].replace("Z", "+00:00")).astimezone().strftime("%Y-%m-%d %H:%M:%S")
     state = "ok" if Path(r["path"]).exists() else "MISSING"
-    print(f"  received {received}  recorded {r['started']}  {r['duration']:5.1f}s  {state}  {Path(r['path']).name}")
+    print(f"  recorded {recorded}  received {received}  {r['duration']:5.1f}s  {state}  {Path(r['path']).name}")
