@@ -23,10 +23,11 @@ struct LifeRecorderApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(recorder: recorder, uploads: uploads, showSettings: $showSettings)
-                .task { uploads.activate(); await recorder.resumeIfEnabled() }
+                .task { uploads.activate(); recorder.refreshInputs(); await recorder.resumeIfEnabled() }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         uploads.activate()
+                        recorder.refreshInputs()
                         Task { await recorder.resumeIfEnabled() }
                     }
                 }
@@ -83,6 +84,7 @@ struct ContentView: View {
                     }
                     .padding(24).frame(maxWidth: .infinity)
                     .background(.quaternary, in: RoundedRectangle(cornerRadius: 28))
+                    InputSection(recorder: recorder)
                     VStack(alignment: .leading, spacing: 12) {
                         Label("\(uploads.pendingCount) clips waiting to upload", systemImage: "tray")
                         Text(uploads.status).foregroundStyle(.secondary)
@@ -102,6 +104,45 @@ struct ContentView: View {
             .navigationTitle("Life Recorder").navigationBarTitleDisplayMode(.inline)
             .toolbar { Button("Pair Mac", systemImage: "laptopcomputer") { showSettings = true } }
             .sheet(isPresented: $showSettings) { PairingView(uploads: uploads) }
+        }
+    }
+}
+
+/// Shows which microphone is really in use, so a fallback to the iPhone mic is never silent.
+struct InputSection: View {
+    @ObservedObject var recorder: Recorder
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(recorder.currentInput.map { "Input: " + $0.label } ?? "Input: none",
+                  systemImage: recorder.currentInput?.isExternal == true ? "mic.fill" : "iphone")
+                .font(.headline)
+            if recorder.recording && recorder.currentInput?.isExternal != true {
+                Text("Recording from the iPhone's own microphone, not an external mic.")
+                    .foregroundStyle(.orange)
+            }
+            if recorder.waitingForExternal {
+                Text("Waiting for an external microphone. Nothing is being recorded. If the screen is locked, reopen the app after reconnecting.")
+                    .foregroundStyle(.red)
+            }
+            Picker("Microphone", selection: Binding(get: { recorder.preferredInputID ?? "" },
+                                                    set: { id in Task { await recorder.setPreferredInput(id.isEmpty ? nil : id) } })) {
+                Text("Automatic (external first)").tag("")
+                ForEach(recorder.availableInputs) { Text($0.label).tag($0.id) }
+                if let saved = recorder.preferredInputID, !recorder.availableInputs.contains(where: { $0.id == saved }) {
+                    Text("Saved microphone (not connected)").tag(saved)
+                }
+            }
+            Toggle("Only record from an external microphone", isOn: Binding(get: { recorder.requireExternalInput },
+                                                                         set: { value in Task { await recorder.setRequireExternalInput(value) } }))
+            DisclosureGroup("Recent audio events") {
+                VStack(alignment: .leading, spacing: 4) {
+                    if recorder.events.isEmpty { Text("No events yet").foregroundStyle(.secondary) }
+                    ForEach(Array(recorder.events.enumerated()), id: \.offset) { _, event in
+                        Text(event).font(.caption.monospaced()).textSelection(.enabled)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 }
