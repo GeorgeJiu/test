@@ -26,10 +26,13 @@ struct AudioInput: Identifiable, Equatable {
 
     var kind: String {
         switch type {
-        case .bluetoothHFP: return String(localized: "Bluetooth")
+        case .bluetoothHFP, .bluetoothA2DP, .bluetoothLE: return String(localized: "Bluetooth")
         case .usbAudio: return "USB"
         case .headsetMic: return String(localized: "Headset")
         case .builtInMic: return "iPhone"
+        case .builtInSpeaker: return String(localized: "Speaker")
+        case .builtInReceiver: return String(localized: "Receiver")
+        case .headphones: return String(localized: "Headphones")
         case .carAudio: return String(localized: "Car")
         default: return type.rawValue
         }
@@ -37,11 +40,12 @@ struct AudioInput: Identifiable, Equatable {
 
     var label: String { "\(name) (\(kind))" }
 
-    /// Automatic choice prefers a DJI transmitter connected directly, then a wired/USB receiver,
-    /// then other Bluetooth devices (which may be phones or headsets), and the built-in microphone last.
+    /// Automatic choice prefers a DJI transmitter connected directly, then a wired/USB receiver, then the
+    /// built-in microphone. Other Bluetooth devices (AirPods, headsets, phones) are only used when chosen by hand,
+    /// so connecting headphones to listen never takes over the microphone.
     private var rank: Int {
         switch type {
-        case .bluetoothHFP: return name.localizedCaseInsensitiveContains("DJI") ? 0 : 3
+        case .bluetoothHFP: return name.localizedCaseInsensitiveContains("DJI") ? 0 : 10
         case .usbAudio: return 1
         case .headsetMic: return 2
         case .builtInMic: return 9
@@ -67,6 +71,7 @@ final class Recorder: ObservableObject {
     @Published private(set) var incompleteClips = 0
     @Published private(set) var currentInput: AudioInput?
     @Published private(set) var availableInputs: [AudioInput] = []
+    @Published private(set) var currentOutput: AudioInput?
     @Published private(set) var preferredInputID = UserDefaults.standard.string(forKey: "preferredInputID")
     @Published private(set) var requireExternalInput = UserDefaults.standard.bool(forKey: "requireExternalInput")
     @Published private(set) var waitingForExternal = false
@@ -122,6 +127,8 @@ final class Recorder: ObservableObject {
             waitingForExternal = false
             sessionInput = nil
             microphoneWarning = nil
+            try? Self.configure(AVAudioSession.sharedInstance()) // Show Bluetooth mics again in the list.
+            refreshInputs()
             status = String(localized: "Recorder is off")
         }
     }
@@ -143,12 +150,31 @@ final class Recorder: ObservableObject {
         await restartIfActive()
     }
 
+    /// Bluetooth mics are only visible while Bluetooth input is enabled; this checks for them again,
+    /// e.g. after turning on a DJI transmitter while recording with the iPhone microphone.
+    func rescanInputs() async {
+        note("Rescanning microphones")
+        if recording || waitingForExternal {
+            await restartIfActive()
+        } else {
+            try? Self.configure(AVAudioSession.sharedInstance())
+            refreshInputs()
+        }
+    }
+
     /// Reads the current route and the microphones iOS offers for this category.
     func refreshInputs() {
         let session = AVAudioSession.sharedInstance()
         if session.category != .playAndRecord { try? Self.configure(session) }
-        availableInputs = (session.availableInputs ?? []).map(AudioInput.init)
+        let inputs = (session.availableInputs ?? []).map(AudioInput.init)
+        if session.categoryOptions.contains(.allowBluetoothHFP) {
+            availableInputs = inputs
+        } else {
+            // Bluetooth mics are hidden while Bluetooth is output-only; keep listing the ones seen last time.
+            availableInputs = inputs + availableInputs.filter { $0.isBluetooth && !inputs.contains($0) }
+        }
         currentInput = session.currentRoute.inputs.first.map(AudioInput.init)
+        currentOutput = session.currentRoute.outputs.first.map(AudioInput.init)
     }
 
     func resumeIfEnabled(allowBackground: Bool = false) async {
@@ -175,9 +201,15 @@ final class Recorder: ObservableObject {
         guard enabled else { return } // The switch may have changed during permission/recovery.
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try Self.configure(audioSession)
+            try Self.configure(audioSession) // Bluetooth input on, so every microphone can be seen.
             try audioSession.setActive(true)
-            selectInput(audioSession)
+            if let pick = selectInput(audioSession), !pick.choice.isBluetooth, !pick.fallback {
+                // No Bluetooth mic wanted: make Bluetooth output-only so AirPods play in high quality
+                // and can never become the microphone. (While a chosen mic is missing, input stays
+                // enabled so its reconnection is noticed.)
+                try Self.configure(audioSession, bluetoothInput: false)
+                selectInput(audioSession)
+            }
             refreshInputs()
             updateMicrophoneWarning()
             if requireExternalInput && currentInput?.isExternal != true {
@@ -234,16 +266,21 @@ final class Recorder: ObservableObject {
         }
     }
 
-    private static func configure(_ session: AVAudioSession) throws {
-        // .allowBluetoothHFP is required for a Bluetooth mic to be an input.
-        try session.setCategory(.playAndRecord, mode: .default,
-                                options: [.mixWithOthers, .defaultToSpeaker, .allowBluetoothHFP])
+    /// HFP is required for a Bluetooth mic, but iOS then also sends all output to that same device.
+    /// Without it, Bluetooth headphones are used through A2DP for output only.
+    private static func configure(_ session: AVAudioSession, bluetoothInput: Bool = true) throws {
+        var options: AVAudioSession.CategoryOptions = [.mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP]
+        if bluetoothInput { options.insert(.allowBluetoothHFP) }
+        try session.setCategory(.playAndRecord, mode: .default, options: options)
     }
 
-    private func selectInput(_ session: AVAudioSession) {
+    /// Pins the microphone to use. `fallback` is true when the wanted microphone is missing.
+    @discardableResult
+    private func selectInput(_ session: AVAudioSession) -> (choice: AudioInput, fallback: Bool)? {
         let inputs = (session.availableInputs ?? []).map(AudioInput.init)
+        let wanted = preferredInputID ?? sessionInput?.id
         guard let choice = AudioInput.choose(from: inputs, preferredID: preferredInputID, sessionID: sessionInput?.id)
-        else { return }
+        else { return nil }
         do {
             // Pin even the built-in mic: otherwise iOS may switch to whichever Bluetooth device it likes.
             // A reconnecting microphone is picked up by the route-change handler instead.
@@ -251,6 +288,7 @@ final class Recorder: ObservableObject {
         } catch {
             note("Could not select \(choice.label): \(error.localizedDescription)")
         }
+        return (choice, wanted != nil && choice.id != wanted)
     }
 
     /// Compares the live input with the session's microphone and alerts once per change.

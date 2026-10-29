@@ -20,6 +20,17 @@ final class RecorderTests: XCTestCase {
         XCTAssertFalse(Recorder().enabled)
     }
 
+    func testHeadphonesNeverBecomeTheMicrophoneUnlessChosen() {
+        let iphone = AudioInput(id: "mic", name: "iPhone Microphone", type: .builtInMic)
+        let airpods = AudioInput(id: "pods", name: "AirPods Pro", type: .bluetoothHFP)
+        let dji = AudioInput(id: "dji", name: "DJI Mic Mini 2", type: .bluetoothHFP)
+        XCTAssertEqual(AudioInput.choose(from: [airpods, iphone], preferredID: nil, sessionID: nil), iphone)
+        XCTAssertEqual(AudioInput.choose(from: [airpods, iphone, dji], preferredID: nil, sessionID: nil), dji)
+        XCTAssertEqual(AudioInput.choose(from: [airpods, iphone], preferredID: "pods", sessionID: nil), airpods)
+        XCTAssertEqual(AudioInput.choose(from: [airpods, iphone], preferredID: nil, sessionID: "dji"), iphone,
+                       "A missing session mic falls back to the iPhone, not to other Bluetooth devices")
+    }
+
     func testContinuousBuffersRotateIntoDecodableAACWithoutLosingFrames() async throws {
         let before = Set(QueueStore.pending().map(\.id))
         let lock = NSLock()

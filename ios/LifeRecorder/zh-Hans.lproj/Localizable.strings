@@ -58,6 +58,13 @@
 "Bluetooth" = "蓝牙";
 "Headset" = "耳机";
 "Car" = "车载";
+"Speaker" = "扬声器";
+"Receiver" = "听筒";
+"Headphones" = "耳机";
+"Output: %@" = "输出：%@";
+"Output: none" = "输出：无";
+"Rescan microphones" = "重新检测麦克风";
+"While recording from a Bluetooth microphone, iOS also sends the phone's sound to it, so the speaker and AirPods stay silent. To listen while recording, plug the DJI receiver into the iPhone (USB) or use the iPhone microphone." = "用蓝牙麦克风录音时，iOS 会把手机的声音也输出到这个蓝牙麦克风，所以扬声器和 AirPods 会没有声音。想边录边听，请把 DJI 接收器插到 iPhone 上（USB），或改用 iPhone 麦克风。";
 "Recorder is off" = "录音已关闭";
 "Ready to resume" = "准备恢复录音";
 "Allow microphone access in Settings to record" = "请在“设置”中允许访问麦克风";

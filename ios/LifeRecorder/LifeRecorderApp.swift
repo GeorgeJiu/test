@@ -142,6 +142,12 @@ struct InputSection: View {
             Label(recorder.currentInput.map { String(localized: "Input: \($0.label)") } ?? String(localized: "Input: none"),
                   systemImage: recorder.currentInput?.isExternal == true ? "mic.fill" : "iphone")
                 .font(.headline)
+            Label(recorder.currentOutput.map { String(localized: "Output: \($0.label)") } ?? String(localized: "Output: none"),
+                  systemImage: "speaker.wave.2")
+            if recorder.currentInput?.isBluetooth == true {
+                Text("While recording from a Bluetooth microphone, iOS also sends the phone's sound to it, so the speaker and AirPods stay silent. To listen while recording, plug the DJI receiver into the iPhone (USB) or use the iPhone microphone.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             if let warning = recorder.microphoneWarning {
                 Text(warning).font(.headline).foregroundStyle(.red)
             } else if recorder.recording && recorder.currentInput?.isExternal != true {
@@ -163,6 +169,9 @@ struct InputSection: View {
                 if let saved = recorder.preferredInputID, !recorder.availableInputs.contains(where: { $0.id == saved }) {
                     Text("Saved microphone (not connected)").tag(saved)
                 }
+            }
+            Button("Rescan microphones", systemImage: "arrow.clockwise") {
+                Task { await recorder.rescanInputs() }
             }
             Toggle("Only record from the chosen external microphone", isOn: Binding(get: { recorder.requireExternalInput },
                                                                          set: { value in Task { await recorder.setRequireExternalInput(value) } }))
